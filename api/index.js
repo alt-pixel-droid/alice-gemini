@@ -1,6 +1,6 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 async function searchSerper(query) {
   if (!process.env.SERPER_API_KEY) return null;
@@ -55,14 +55,13 @@ export default async function handler(req, res) {
     }
 
     const systemPrompt = "Ты — голосовой ассистент Алиса. Отвечай кратко, ёмко, по существу, без markdown-разметки (без звездочек и решеток), естественным разговорным языком.";
-    const prompt = `${systemPrompt}${searchContext}\nИстория:\n${history.join('\n')}\nПользователь: ${userText}\nАссистент:`;
+    const prompt = `${systemPrompt}${searchContext}\nИстория диалога:\n${history.join('\n')}\nПользователь: ${userText}\nАссистент:`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
 
-    let reply = response.text?.trim() || 'Не удалось сформировать ответ.';
+    let reply = responseText?.trim() || 'Не удалось сформировать ответ.';
     reply = reply.replace(/[*#_`]/g, '');
 
     // Сохраняем последние реплики в сессию
